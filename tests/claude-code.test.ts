@@ -63,7 +63,7 @@ describe('ClaudeCodeAdapter', () => {
 
   describe('isSessionStart', () => {
     it('returns true for SessionStart event', () => {
-      const stdin = JSON.stringify({ event: 'SessionStart', source: 'startup' });
+      const stdin = JSON.stringify({ hook_event_name: 'SessionStart', source: 'startup' });
       expect(adapter.isSessionStart(stdin)).toBe(true);
     });
 

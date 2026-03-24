@@ -19,7 +19,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   isSessionStart(stdin: string): boolean {
     try {
       const data = JSON.parse(stdin);
-      return data.event === 'SessionStart';
+      return data.hook_event_name === 'SessionStart';
     } catch {
       return false;
     }
