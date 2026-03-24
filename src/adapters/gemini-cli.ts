@@ -28,17 +28,17 @@ export class GeminiCliAdapter implements AgentAdapter {
       ),
     );
 
-    if (!alreadyRegistered) {
-      existing.push({
-        matcher: 'run_shell_command',
-        hooks: [{
-          name: 'agent-term',
-          type: 'command',
-          command: 'agent-term hook --agent gemini-cli',
-          timeout: 15000,
-        }],
-      });
-    }
+    if (alreadyRegistered) return;
+
+    existing.push({
+      matcher: 'run_shell_command',
+      hooks: [{
+        name: 'agent-term',
+        type: 'command',
+        command: 'agent-term hook --agent gemini-cli',
+        timeout: 15000,
+      }],
+    });
 
     this.writeSettings(settings);
   }

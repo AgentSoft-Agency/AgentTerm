@@ -142,7 +142,7 @@ describe('GeminiCliAdapter', () => {
       expect(written.hooks.BeforeTool).toHaveLength(1);
     });
 
-    it('skips registration when already registered', () => {
+    it('skips write when already registered', () => {
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
         hooks: {
@@ -155,9 +155,7 @@ describe('GeminiCliAdapter', () => {
 
       adapter.register();
 
-      expect(writeFileSync).toHaveBeenCalledOnce();
-      const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string);
-      expect(written.hooks.BeforeTool).toHaveLength(1);
+      expect(writeFileSync).not.toHaveBeenCalled();
     });
   });
 
@@ -191,6 +189,22 @@ describe('GeminiCliAdapter', () => {
       adapter.unregister();
 
       expect(writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('removes hook by command fallback when name is absent', () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+        hooks: {
+          BeforeTool: [
+            { matcher: 'run_shell_command', hooks: [{ type: 'command', command: 'agent-term hook --agent gemini-cli' }] },
+          ],
+        },
+      }));
+
+      adapter.unregister();
+
+      const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string);
+      expect(written.hooks.BeforeTool).toBeUndefined();
     });
 
     it('removes BeforeTool key when array becomes empty', () => {
