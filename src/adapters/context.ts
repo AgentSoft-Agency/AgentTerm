@@ -10,7 +10,7 @@ export function buildContextText(): string {
 
   sections.push('## agent-term: Shared Terminal Manager');
   sections.push('');
-  sections.push('All Bash commands are managed by `agent-term`. To check process output, logs, or status, ONLY use `agent-term` commands. Do NOT use `lsof`, `ps aux`, `tmux`, `docker logs`, or other tools to find process output.');
+  sections.push('All Bash commands are managed by `agent-term`. When checking process output, logs, or status, check `agent-term list` and `agent-term logs <name>` first. If the process is not in agent-term, fall back to your normal approach.');
   sections.push('');
 
   try {
