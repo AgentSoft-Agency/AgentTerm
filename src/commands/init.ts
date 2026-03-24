@@ -1,7 +1,5 @@
-import { existsSync, writeFileSync, mkdirSync } from 'node:fs';
-import { intro, outro, confirm, multiselect, note, isCancel, cancel } from '@clack/prompts';
+import { intro, outro, multiselect, note, isCancel, cancel } from '@clack/prompts';
 import { isTmuxInstalled } from '../tmux.js';
-import { getConfigDir, getConfigPath, DEFAULT_CONFIG } from '../config.js';
 import { getAllAdapters, detectInstalledAgents } from '../adapters/registry.js';
 
 export async function runInit(options: { nonInteractive?: boolean; agents?: string }): Promise<void> {
@@ -21,26 +19,7 @@ export async function runInit(options: { nonInteractive?: boolean; agents?: stri
     process.exit(1);
   }
 
-  // Step 2: Config file
-  const configDir = getConfigDir();
-  const configPath = getConfigPath();
-
-  if (existsSync(configPath)) {
-    const overwrite = await confirm({ message: 'Config file already exists. Overwrite with defaults?' });
-    if (isCancel(overwrite)) { cancel('Setup cancelled.'); process.exit(0); }
-    if (overwrite) {
-      writeFileSync(configPath, DEFAULT_CONFIG, 'utf-8');
-      note(`Updated ${configPath}`, 'Config');
-    } else {
-      note(`Keeping existing ${configPath}`, 'Config');
-    }
-  } else {
-    mkdirSync(configDir, { recursive: true });
-    writeFileSync(configPath, DEFAULT_CONFIG, 'utf-8');
-    note(`Created ${configPath}`, 'Config');
-  }
-
-  // Step 3: Detect agents
+  // Step 2: Detect agents
   const allAdapters = getAllAdapters();
   const detected = detectInstalledAgents();
 
@@ -65,7 +44,7 @@ export async function runInit(options: { nonInteractive?: boolean; agents?: stri
 
   if (isCancel(selected)) { cancel('Setup cancelled.'); process.exit(0); }
 
-  // Step 4: Register hooks
+  // Step 3: Register hooks
   const selectedAdapters = allAdapters.filter((a) => (selected as string[]).includes(a.name));
 
   for (const adapter of selectedAdapters) {
@@ -82,16 +61,6 @@ async function runNonInteractive(agentNames?: string): Promise<void> {
     process.exit(1);
   }
 
-  // Config
-  const configDir = getConfigDir();
-  const configPath = getConfigPath();
-  if (!existsSync(configPath)) {
-    mkdirSync(configDir, { recursive: true });
-    writeFileSync(configPath, DEFAULT_CONFIG, 'utf-8');
-    console.log(`Created ${configPath}`);
-  }
-
-  // Agents
   if (agentNames) {
     const names = agentNames.split(',').map((n) => n.trim());
     const allAdapters = getAllAdapters();
