@@ -2,7 +2,8 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir, tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
-import type { AgentAdapter, HookInput, HookMode, HookResult } from './adapter.js';
+import type { AgentAdapter, HookInput, HookResult } from './adapter.js';
+import { buildContextText } from './context.js';
 
 const CLAUDE_DIR = join(homedir(), '.claude');
 const SETTINGS_PATH = join(CLAUDE_DIR, 'settings.json');
@@ -11,24 +12,51 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   name = 'claude-code';
   displayName = 'Claude Code';
   configPath = SETTINGS_PATH;
-  hookMode: HookMode = 'intercept';
-
   detect(): boolean {
     return existsSync(CLAUDE_DIR);
+  }
+
+  isSessionStart(stdin: string): boolean {
+    try {
+      const data = JSON.parse(stdin);
+      return data.event === 'SessionStart';
+    } catch {
+      return false;
+    }
+  }
+
+  generateContext(): string {
+    return buildContextText();
   }
 
   register(): void {
     const settings = this.readSettings();
     if (!settings.hooks) settings.hooks = {};
-    if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
 
-    const existing = settings.hooks.PreToolUse as any[];
-    const alreadyRegistered = existing.some((entry: any) =>
+    // SessionStart hook
+    if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
+    const sessionStartHooks = settings.hooks.SessionStart as any[];
+    const sessionStartRegistered = sessionStartHooks.some((entry: any) =>
       entry.hooks?.some((h: any) => typeof h.command === 'string' && h.command.includes('agent-term')),
     );
+    if (!sessionStartRegistered) {
+      sessionStartHooks.push({
+        matcher: '',
+        hooks: [{
+          type: 'command',
+          command: 'agent-term hook --agent claude-code',
+        }],
+      });
+    }
 
-    if (!alreadyRegistered) {
-      existing.push({
+    // PreToolUse hook
+    if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
+    const preToolHooks = settings.hooks.PreToolUse as any[];
+    const preToolRegistered = preToolHooks.some((entry: any) =>
+      entry.hooks?.some((h: any) => typeof h.command === 'string' && h.command.includes('agent-term')),
+    );
+    if (!preToolRegistered) {
+      preToolHooks.push({
         matcher: 'Bash',
         hooks: [{
           type: 'command',
@@ -43,13 +71,18 @@ export class ClaudeCodeAdapter implements AgentAdapter {
 
   unregister(): void {
     const settings = this.readSettings();
-    if (!settings.hooks?.PreToolUse) return;
 
-    settings.hooks.PreToolUse = (settings.hooks.PreToolUse as any[]).filter(
-      (entry: any) => !entry.hooks?.some((h: any) =>
+    const filterAgentTerm = (entries: any[]) =>
+      entries.filter((entry: any) => !entry.hooks?.some((h: any) =>
         typeof h.command === 'string' && h.command.includes('agent-term'),
-      ),
-    );
+      ));
+
+    if (settings.hooks?.PreToolUse) {
+      settings.hooks.PreToolUse = filterAgentTerm(settings.hooks.PreToolUse);
+    }
+    if (settings.hooks?.SessionStart) {
+      settings.hooks.SessionStart = filterAgentTerm(settings.hooks.SessionStart);
+    }
 
     this.writeSettings(settings);
   }

@@ -56,4 +56,32 @@ describe('ClaudeCodeAdapter', () => {
       expect(parsed.systemMessage).toBe('Command completed.');
     });
   });
+
+  describe('isSessionStart', () => {
+    it('returns true for SessionStart event', () => {
+      const stdin = JSON.stringify({ event: 'SessionStart', source: 'startup' });
+      expect(adapter.isSessionStart(stdin)).toBe(true);
+    });
+
+    it('returns false for PreToolUse event', () => {
+      const stdin = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'ls' } });
+      expect(adapter.isSessionStart(stdin)).toBe(false);
+    });
+
+    it('returns false for malformed JSON', () => {
+      expect(adapter.isSessionStart('not json')).toBe(false);
+    });
+
+    it('returns false for empty string', () => {
+      expect(adapter.isSessionStart('')).toBe(false);
+    });
+  });
+
+  describe('generateContext', () => {
+    it('returns context text containing agent-term', () => {
+      const context = adapter.generateContext();
+      expect(context).toContain('agent-term');
+      expect(context).toContain('shared tmux terminals');
+    });
+  });
 });
