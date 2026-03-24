@@ -24,8 +24,15 @@ export class GeminiCliAdapter implements AgentAdapter {
   }
 
   parseHookInput(stdin: string): HookInput {
-    console.warn('Gemini CLI hook parsing is not yet implemented. Passing through.');
-    return { command: '' };
+    try {
+      const data = JSON.parse(stdin);
+      return {
+        command: data.tool_input?.command ?? '',
+        sessionId: data.session_id,
+      };
+    } catch {
+      return { command: '' };
+    }
   }
 
   formatHookOutput(result: HookResult): string {
