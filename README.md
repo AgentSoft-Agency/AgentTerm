@@ -15,7 +15,7 @@ When one AI agent session starts a dev server, watcher, or build process, no oth
 | Agent | Status |
 |-------|--------|
 | Claude Code | Fully supported |
-| Gemini CLI | Stub (adapter ready, hook format TBD) |
+| Gemini CLI | Fully supported |
 | Codex CLI | Stub (adapter ready, hook format TBD) |
 
 ## Prerequisites
