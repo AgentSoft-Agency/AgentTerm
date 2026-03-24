@@ -89,9 +89,8 @@ export async function runHook(agentName: string): Promise<void> {
     stdin += chunk;
   }
 
-  // Context-mode adapters (e.g. Codex CLI) inject context into the model
-  // via SessionStart stdout instead of intercepting individual commands.
-  if (adapter.hookMode === 'context' && adapter.generateContext) {
+  // SessionStart hooks inject context about agent-term into the conversation.
+  if (adapter.isSessionStart(stdin)) {
     const context = adapter.generateContext();
     if (context) {
       process.stdout.write(context);
