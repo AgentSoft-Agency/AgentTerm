@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 const SESSION_PREFIX = 'at-';
 const MAX_NAME_LENGTH = 30;
 
@@ -52,4 +54,11 @@ export function fromSessionName(sessionName: string): string {
   return sessionName.startsWith(SESSION_PREFIX)
     ? sessionName.slice(SESSION_PREFIX.length)
     : sessionName;
+}
+
+/**
+ * Generate a 4-char hex suffix for unique session names.
+ */
+export function uniqueSuffix(): string {
+  return randomBytes(2).toString('hex');
 }

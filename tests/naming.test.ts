@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { autoName } from '../src/naming.js';
+import { uniqueSuffix } from '../src/naming.js';
 
 describe('autoName', () => {
   it('converts simple commands to kebab-case', () => {
@@ -29,5 +30,18 @@ describe('autoName', () => {
 
   it('strips leading path components', () => {
     expect(autoName('/usr/bin/node server.js')).toBe('node-server.js');
+  });
+});
+
+describe('uniqueSuffix', () => {
+  it('returns a 4-character hex string', () => {
+    const suffix = uniqueSuffix();
+    expect(suffix).toMatch(/^[0-9a-f]{4}$/);
+  });
+
+  it('returns different values on successive calls', () => {
+    const a = uniqueSuffix();
+    const b = uniqueSuffix();
+    expect(a).not.toBe(b);
   });
 });
