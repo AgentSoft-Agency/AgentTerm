@@ -60,4 +60,37 @@ describe('GeminiCliAdapter', () => {
       expect(result).toEqual({ command: 'ls', sessionId: 'x' });
     });
   });
+
+  describe('formatHookOutput', () => {
+    it('returns empty string for passthrough', () => {
+      const result = adapter.formatHookOutput({ action: 'passthrough' });
+      expect(result).toBe('');
+    });
+
+    it('formats rewrite with decision and tool_input', () => {
+      const result = adapter.formatHookOutput({
+        action: 'rewrite',
+        rewrittenCommand: 'agent-term start --name pnpm-dev -- pnpm dev',
+        systemMessage: "Command routed to shared terminal 'pnpm-dev' via agent-term.",
+      });
+      const parsed = JSON.parse(result);
+      expect(parsed.decision).toBe('allow');
+      expect(parsed.hookSpecificOutput.tool_input.command).toBe(
+        'agent-term start --name pnpm-dev -- pnpm dev',
+      );
+      expect(parsed.systemMessage).toContain('pnpm-dev');
+    });
+
+    it('defaults systemMessage to empty string when omitted', () => {
+      const result = adapter.formatHookOutput({
+        action: 'rewrite',
+        rewrittenCommand: 'agent-term logs my-server --lines 50',
+      });
+      const parsed = JSON.parse(result);
+      expect(parsed.systemMessage).toBe('');
+      expect(parsed.hookSpecificOutput.tool_input.command).toBe(
+        'agent-term logs my-server --lines 50',
+      );
+    });
+  });
 });

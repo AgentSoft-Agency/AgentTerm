@@ -36,6 +36,16 @@ export class GeminiCliAdapter implements AgentAdapter {
   }
 
   formatHookOutput(result: HookResult): string {
-    return '';
+    if (result.action === 'passthrough') return '';
+
+    return JSON.stringify({
+      decision: 'allow',
+      hookSpecificOutput: {
+        tool_input: {
+          command: result.rewrittenCommand ?? '',
+        },
+      },
+      systemMessage: result.systemMessage ?? '',
+    });
   }
 }
