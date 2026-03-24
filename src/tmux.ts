@@ -122,3 +122,25 @@ export function getSessionCreated(sessionName: string): number {
   ]);
   return parseInt(stdout, 10) || 0;
 }
+
+/**
+ * Create a tmux session with remain-on-exit enabled.
+ * This prevents the session from dying immediately when the command exits,
+ * allowing us to capture output before cleanup.
+ */
+export function createSessionWithRemainOnExit(sessionName: string, command: string): boolean {
+  const { exitCode } = tmuxSync([
+    'new-session', '-d', '-s', sessionName, '-x', '200', '-y', '50', command,
+  ]);
+  if (exitCode !== 0) return false;
+
+  tmuxSync(['set-option', '-t', sessionName, 'remain-on-exit', 'on']);
+  return true;
+}
+
+/**
+ * Set remain-on-exit on or off for a session.
+ */
+export function setRemainOnExit(sessionName: string, on: boolean): void {
+  tmuxSync(['set-option', '-t', sessionName, 'remain-on-exit', on ? 'on' : 'off']);
+}
