@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
+import { randomBytes } from 'node:crypto';
 import type { AgentAdapter, HookInput, HookMode, HookResult } from './adapter.js';
 
 const GEMINI_DIR = join(homedir(), '.gemini');
@@ -76,6 +77,20 @@ export class GeminiCliAdapter implements AgentAdapter {
 
   formatHookOutput(result: HookResult): string {
     if (result.action === 'passthrough') return '';
+
+    if (result.action === 'output') {
+      const tmpFile = join(tmpdir(), `agent-term-${randomBytes(4).toString('hex')}.out`);
+      writeFileSync(tmpFile, result.stdout ?? '', 'utf-8');
+      return JSON.stringify({
+        decision: 'allow',
+        hookSpecificOutput: {
+          tool_input: {
+            command: `cat ${tmpFile}`,
+          },
+        },
+        systemMessage: result.systemMessage ?? '',
+      });
+    }
 
     return JSON.stringify({
       decision: 'allow',

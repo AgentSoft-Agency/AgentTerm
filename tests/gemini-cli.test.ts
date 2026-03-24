@@ -104,6 +104,18 @@ describe('GeminiCliAdapter', () => {
         'agent-term logs my-server --lines 50',
       );
     });
+
+    it('formats output action with temp file cat command', () => {
+      const result = adapter.formatHookOutput({
+        action: 'output',
+        stdout: 'build successful\n',
+        systemMessage: 'Command completed.',
+      });
+      const parsed = JSON.parse(result);
+      expect(parsed.decision).toBe('allow');
+      expect(parsed.hookSpecificOutput.tool_input.command).toMatch(/^cat .*agent-term-.*\.out$/);
+      expect(parsed.systemMessage).toBe('Command completed.');
+    });
   });
 
   describe('register', () => {

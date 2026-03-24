@@ -43,5 +43,17 @@ describe('ClaudeCodeAdapter', () => {
       );
       expect(parsed.systemMessage).toContain('pnpm-dev');
     });
+
+    it('formats output action with temp file cat command', () => {
+      const result = adapter.formatHookOutput({
+        action: 'output',
+        stdout: 'hello world\nline 2',
+        systemMessage: 'Command completed.',
+      });
+      const parsed = JSON.parse(result);
+      expect(parsed.hookSpecificOutput.permissionDecision).toBe('allow');
+      expect(parsed.hookSpecificOutput.updatedInput.command).toMatch(/^cat .*agent-term-.*\.out$/);
+      expect(parsed.systemMessage).toBe('Command completed.');
+    });
   });
 });
