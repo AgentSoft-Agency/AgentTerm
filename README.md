@@ -2,31 +2,25 @@
 
 Shared long-running terminals for AI coding agents.
 
-When one AI agent session starts a dev server, watcher, or build process, no other session can see its output or send it input. `agent-term` fixes this by routing long-running commands into shared [tmux](https://github.com/tmux/tmux) sessions that any agent session can access.
+When one AI agent session starts a dev server, watcher, or build process, no other session can see its output or send it input. `agent-term` fixes this by routing all Bash commands through shared [tmux](https://github.com/tmux/tmux) sessions that any agent session can access.
 
 ## How it works
 
-1. A pre-hook intercepts matching commands (e.g., `pnpm dev`)
-2. The command runs inside a shared tmux session instead of the agent's shell
-3. Any agent session can read logs, send input, or check status
+1. A pre-hook intercepts **every** Bash command the agent runs
+2. The command runs inside a shared tmux session
+3. Short-lived commands (< 13s) return full output transparently — the agent doesn't notice tmux
+4. Long-running commands stay in tmux — the agent gets logs and the terminal name for follow-up
+5. At session start, context is injected telling the agent about active terminals and `agent-term` commands
 
 ## Supported agents
 
 | Agent | Status | Integration |
 |-------|--------|-------------|
-| Claude Code | Fully supported | Pre-hook command interception (`PreToolUse`) |
-| Gemini CLI | Fully supported | Pre-hook command interception (`BeforeTool`) |
-| Codex CLI | Fully supported | Context injection via `SessionStart` hook |
+| Claude Code | Fully supported | `PreToolUse` + `SessionStart` hooks |
+| Gemini CLI | Fully supported | `BeforeTool` + `SessionStart` hooks |
+| Codex CLI | Fully supported | `SessionStart` context injection |
 
-### How Codex CLI integration works
-
-Codex CLI doesn't have a pre-tool-execution hook, so agent-term uses a different strategy: a `SessionStart` hook injects context into the model at the start of each session. This context includes:
-
-- Instructions to use `agent-term` for long-running commands
-- A list of currently active shared terminals
-- The configured command patterns that should be routed through agent-term
-
-The model then uses `agent-term start`, `agent-term logs`, etc. directly instead of running long-running processes in its own shell.
+All agents get context injected at session start listing active terminals and available commands.
 
 ## Prerequisites
 
@@ -49,88 +43,69 @@ agent-term init
 
 This will:
 1. Check that tmux is installed
-2. Create `~/.agent-term/config` with default command patterns
-3. Auto-detect installed AI agents on your machine
-4. Register hooks for the agents you select
+2. Auto-detect installed AI agents on your machine
+3. Register hooks for the agents you select (both command interception and session start context)
 
 For scripted/CI setups:
 
 ```bash
-agent-term init --non-interactive --agents claude-code
+agent-term init --non-interactive --agents claude-code,gemini-cli
 ```
 
 ## Usage
 
 ### Automatic (via hooks)
 
-Once set up, matching commands are intercepted automatically. When an agent runs `pnpm dev`, the hook routes it to a shared terminal. If the terminal is already running, the agent gets recent logs instead.
+Once set up, all Bash commands are routed through tmux automatically. No configuration needed — no pattern files to maintain.
+
+- **Quick commands** (`ls`, `git status`, `pnpm build`) finish and return output as if they ran normally
+- **Long-running commands** (`pnpm dev`, `docker compose up`) stay running in tmux — the agent gets logs and can check back later
 
 ### Manual
 
 ```bash
 # Start a shared terminal
-agent-term start -- pnpm dev
+agent-term start --name frontend -- pnpm dev
 
 # List active terminals
 agent-term list
 
 # Read output (last 100 lines)
-agent-term logs pnpm-dev
+agent-term logs frontend
 
 # Read more output
-agent-term logs pnpm-dev --lines 500
+agent-term logs frontend --lines 500
 
 # Send input to a terminal
-agent-term send pnpm-dev "rs"          # restart
-agent-term send pnpm-dev "C-c"         # Ctrl+C (tmux key syntax)
+agent-term send frontend "rs"          # restart
+agent-term send frontend "C-c"         # Ctrl+C (tmux key syntax)
 
 # Check terminal status
-agent-term status pnpm-dev
+agent-term status frontend
+
+# Restart a terminal (kill + re-run same command)
+agent-term restart frontend
 
 # Kill a terminal
-agent-term kill pnpm-dev
+agent-term kill frontend
 ```
-
-## Configuration
-
-Edit `~/.agent-term/config` to control which commands get intercepted:
-
-```
-# Long-running dev servers
-pnpm dev*
-pnpm run dev*
-npm run dev*
-yarn dev*
-
-# Docker
-docker compose up*
-docker-compose up*
-
-# Watchers
-pnpm run watch*
-nodemon *
-tsx watch *
-
-# Custom
-pnpm start*
-```
-
-Patterns use glob-style matching. Lines starting with `#` are comments. First match wins.
 
 ## How terminals are named
 
-Commands are auto-named: `pnpm dev` becomes `pnpm-dev`, `docker compose up` becomes `docker-compose-up`. Use `--name` to override:
+Commands are auto-named: `pnpm dev` becomes `pnpm-dev`, `docker compose up` becomes `docker-compose-up`. A random suffix is appended for uniqueness (e.g., `pnpm-dev-a3f0`). Use `--name` to override:
 
 ```bash
-agent-term start --name my-server -- pnpm dev
+agent-term start --name frontend -- pnpm --filter app dev
 ```
 
 ## Architecture
 
 - All terminals run on a dedicated tmux server (`tmux -L agent-term`), fully isolated from your own tmux sessions
-- Session names are prefixed with `at-` (e.g., `at-pnpm-dev`)
-- Hook integration uses an adapter pattern — each agent has an adapter that translates between its hook format and agent-term's internal format
-- Persistence is fire-and-forget: if tmux or agent-term is unavailable, commands pass through normally
+- Session names are prefixed with `at-` (e.g., `at-frontend`)
+- Hook integration uses an adapter pattern — each agent has an adapter that handles its hook format
+- Universal routing: every Bash command goes through tmux, no pattern configuration needed
+- Graceful fallback: if tmux or agent-term fails, commands pass through to the agent's shell normally
+- Context injection at session start tells agents about active terminals and available commands
 
 ## Platform support
 
