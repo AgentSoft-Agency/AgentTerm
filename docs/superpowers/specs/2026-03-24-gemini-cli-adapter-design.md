@@ -80,7 +80,7 @@ Extraction mapping:
 
 All other fields (`hook_event_name`, `cwd`, `transcript_path`, `timestamp`, `tool_name`) are ignored — same approach as Claude Code adapter.
 
-**Error handling:** Invalid JSON or missing `tool_input.command` → return `{ command: '' }` (triggers passthrough in hook logic).
+**Error handling:** Invalid JSON or missing `tool_input.command` → return `{ command: '' }` (triggers passthrough in hook logic). Wrap `JSON.parse` in try-catch — this is a deliberate improvement over the Claude Code adapter which currently lets parse errors throw. Follow-up: align the Claude Code adapter to match this defensive behavior.
 
 ### Output Formatting
 
@@ -107,9 +107,9 @@ All other fields (`hook_event_name`, `cwd`, `transcript_path`, `timestamp`, `too
 
 ### Unregistration
 
-Remove any hook entries in `hooks.BeforeTool` where a nested hook's `command` contains `"agent-term"`. Preserve all other hooks. Same defensive pattern as Claude Code.
+Remove any hook entries in `hooks.BeforeTool` where a nested hook's `name` equals `"agent-term"` (preferred) or `command` contains `"agent-term"` (fallback). Using `name` is cleaner and more reliable than substring matching on command. Preserve all other hooks.
 
-If `BeforeTool` array becomes empty after removal, remove the key entirely.
+If `BeforeTool` array becomes empty after removal, remove the key entirely. Leave `hooks: {}` if other event keys remain — don't remove the parent `hooks` object.
 
 ### README Update
 
@@ -131,7 +131,9 @@ Mirror `claude-code.test.ts` structure in a new `gemini-cli.test.ts`:
 - Valid BeforeTool JSON → extracts command and sessionId
 - Missing tool_input → returns empty command
 - Missing tool_input.command → returns empty command
-- Malformed JSON → returns empty command
+- Malformed JSON (non-JSON string) → returns empty command
+- Empty string stdin → returns empty command
+- Valid JSON but wrong shape (no tool_input) → returns empty command
 - Extra fields ignored gracefully
 
 ### Output Formatting Tests
