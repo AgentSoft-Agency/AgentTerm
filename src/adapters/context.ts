@@ -35,6 +35,7 @@ export function buildContextText(): string {
   sections.push('- `agent-term logs <name> --lines 500` — read more output');
   sections.push('- `agent-term send <name> "<input>"` — send input (e.g. "rs" to restart)');
   sections.push('- `agent-term status <name>` — check if process is alive');
+  sections.push('- `agent-term restart <name>` — restart a terminal (kill + re-run same command)');
   sections.push('- `agent-term kill <name>` — stop a terminal');
   sections.push('- `agent-term start --name <name> -- <command>` — start a new long-running process');
 

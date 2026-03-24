@@ -67,6 +67,15 @@ program
   });
 
 program
+  .command('restart')
+  .description('Restart a shared terminal (kill and re-run same command)')
+  .argument('<name>', 'Terminal name')
+  .action(async (name) => {
+    const { runRestart } = await import('./commands/restart.js');
+    runRestart(name);
+  });
+
+program
   .command('status')
   .description('Show terminal status')
   .argument('<name>', 'Terminal name')
