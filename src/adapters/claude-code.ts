@@ -103,23 +103,25 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       writeFileSync(tmpFile, result.stdout ?? '', 'utf-8');
       return JSON.stringify({
         hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
           permissionDecision: 'allow',
+          permissionDecisionReason: result.systemMessage ?? 'Command completed via agent-term.',
           updatedInput: {
             command: `cat ${tmpFile}`,
           },
         },
-        systemMessage: result.systemMessage ?? '',
       });
     }
 
     return JSON.stringify({
       hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
         permissionDecision: 'allow',
+        permissionDecisionReason: result.systemMessage ?? 'Command routed via agent-term.',
         updatedInput: {
           command: result.rewrittenCommand,
         },
       },
-      systemMessage: result.systemMessage ?? '',
     });
   }
 

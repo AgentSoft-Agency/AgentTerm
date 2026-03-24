@@ -22,8 +22,11 @@ export function autoName(command: string): string {
 
   if (words.length === 0) return 'unknown';
 
-  const name = words.join('-').toLowerCase();
-  return name.slice(0, MAX_NAME_LENGTH);
+  const name = words
+    .join('-')
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, '');
+  return name.slice(0, MAX_NAME_LENGTH) || 'unknown';
 }
 
 /**

@@ -30,18 +30,20 @@ describe('ClaudeCodeAdapter', () => {
       expect(result).toBe('');
     });
 
-    it('formats rewrite with updatedInput', () => {
+    it('formats rewrite with updatedInput and hookEventName', () => {
       const result = adapter.formatHookOutput({
         action: 'rewrite',
         rewrittenCommand: 'agent-term start --name pnpm-dev -- pnpm dev',
         systemMessage: "Command routed to shared terminal 'pnpm-dev' via agent-term.",
       });
       const parsed = JSON.parse(result);
+      expect(parsed.hookSpecificOutput.hookEventName).toBe('PreToolUse');
       expect(parsed.hookSpecificOutput.permissionDecision).toBe('allow');
       expect(parsed.hookSpecificOutput.updatedInput.command).toBe(
         'agent-term start --name pnpm-dev -- pnpm dev',
       );
-      expect(parsed.systemMessage).toContain('pnpm-dev');
+      expect(parsed.hookSpecificOutput.permissionDecisionReason).toContain('pnpm-dev');
+      expect(parsed.systemMessage).toBeUndefined();
     });
 
     it('formats output action with temp file cat command', () => {
@@ -51,9 +53,11 @@ describe('ClaudeCodeAdapter', () => {
         systemMessage: 'Command completed.',
       });
       const parsed = JSON.parse(result);
+      expect(parsed.hookSpecificOutput.hookEventName).toBe('PreToolUse');
       expect(parsed.hookSpecificOutput.permissionDecision).toBe('allow');
       expect(parsed.hookSpecificOutput.updatedInput.command).toMatch(/^cat .*agent-term-.*\.out$/);
-      expect(parsed.systemMessage).toBe('Command completed.');
+      expect(parsed.hookSpecificOutput.permissionDecisionReason).toBe('Command completed.');
+      expect(parsed.systemMessage).toBeUndefined();
     });
   });
 

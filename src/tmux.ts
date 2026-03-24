@@ -16,6 +16,7 @@ export function tmuxSync(args: string[]): { stdout: string; stderr: string; exit
   const result = spawnSync('tmux', buildTmuxArgs(args), {
     encoding: 'utf-8',
     timeout: 10000,
+    stdio: ['pipe', 'pipe', 'pipe'],
   });
   return {
     stdout: result.stdout?.trim() ?? '',
@@ -74,7 +75,12 @@ export function capturePane(sessionName: string, lines: number): string {
   const { stdout } = tmuxSync([
     'capture-pane', '-t', sessionName, '-p', '-S', `-${lines}`,
   ]);
-  return stdout;
+  // Strip tmux "Pane is dead" status lines that appear with remain-on-exit
+  return stdout
+    .split('\n')
+    .filter((line) => !line.startsWith('Pane is dead'))
+    .join('\n')
+    .trim();
 }
 
 /**
@@ -129,12 +135,16 @@ export function getSessionCreated(sessionName: string): number {
  * allowing us to capture output before cleanup.
  */
 export function createSessionWithRemainOnExit(sessionName: string, command: string): boolean {
+  // Wrap the command in a shell that sets remain-on-exit INSIDE the session
+  // before running the actual command. This avoids the race condition where
+  // fast commands exit between new-session and a separate set-option call.
+  const wrappedCommand = `/bin/sh -c "tmux set-option -w remain-on-exit on 2>/dev/null; ${command.replace(/"/g, '\\"')}"`;
+
   const { exitCode } = tmuxSync([
-    'new-session', '-d', '-s', sessionName, '-x', '200', '-y', '50', command,
+    'new-session', '-d', '-s', sessionName, '-x', '200', '-y', '50', wrappedCommand,
   ]);
   if (exitCode !== 0) return false;
 
-  tmuxSync(['set-option', '-t', sessionName, 'remain-on-exit', 'on']);
   return true;
 }
 
@@ -142,5 +152,7 @@ export function createSessionWithRemainOnExit(sessionName: string, command: stri
  * Set remain-on-exit on or off for a session.
  */
 export function setRemainOnExit(sessionName: string, on: boolean): void {
+  // Per-session override: used to turn off remain-on-exit for long-running
+  // processes so they auto-die when the process eventually exits.
   tmuxSync(['set-option', '-t', sessionName, 'remain-on-exit', on ? 'on' : 'off']);
 }
