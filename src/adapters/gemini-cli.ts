@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
-import type { AgentAdapter, HookInput, HookResult } from './adapter.js';
+import type { AgentAdapter, HookInput, HookMode, HookResult } from './adapter.js';
 
 const GEMINI_DIR = join(homedir(), '.gemini');
 const SETTINGS_PATH = join(GEMINI_DIR, 'settings.json');
@@ -10,6 +10,7 @@ export class GeminiCliAdapter implements AgentAdapter {
   name = 'gemini-cli';
   displayName = 'Gemini CLI';
   configPath = SETTINGS_PATH;
+  hookMode: HookMode = 'intercept';
 
   detect(): boolean {
     return existsSync(GEMINI_DIR);

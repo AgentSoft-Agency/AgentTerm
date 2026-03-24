@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
-import type { AgentAdapter, HookInput, HookResult } from './adapter.js';
+import type { AgentAdapter, HookInput, HookMode, HookResult } from './adapter.js';
 
 const CLAUDE_DIR = join(homedir(), '.claude');
 const SETTINGS_PATH = join(CLAUDE_DIR, 'settings.json');
@@ -10,6 +10,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   name = 'claude-code';
   displayName = 'Claude Code';
   configPath = SETTINGS_PATH;
+  hookMode: HookMode = 'intercept';
 
   detect(): boolean {
     return existsSync(CLAUDE_DIR);

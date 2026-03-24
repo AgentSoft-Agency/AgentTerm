@@ -12,11 +12,21 @@ When one AI agent session starts a dev server, watcher, or build process, no oth
 
 ## Supported agents
 
-| Agent | Status |
-|-------|--------|
-| Claude Code | Fully supported |
-| Gemini CLI | Fully supported |
-| Codex CLI | Stub (adapter ready, hook format TBD) |
+| Agent | Status | Integration |
+|-------|--------|-------------|
+| Claude Code | Fully supported | Pre-hook command interception (`PreToolUse`) |
+| Gemini CLI | Fully supported | Pre-hook command interception (`BeforeTool`) |
+| Codex CLI | Fully supported | Context injection via `SessionStart` hook |
+
+### How Codex CLI integration works
+
+Codex CLI doesn't have a pre-tool-execution hook, so agent-term uses a different strategy: a `SessionStart` hook injects context into the model at the start of each session. This context includes:
+
+- Instructions to use `agent-term` for long-running commands
+- A list of currently active shared terminals
+- The configured command patterns that should be routed through agent-term
+
+The model then uses `agent-term start`, `agent-term logs`, etc. directly instead of running long-running processes in its own shell.
 
 ## Prerequisites
 
