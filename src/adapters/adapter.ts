@@ -4,9 +4,10 @@ export interface HookInput {
 }
 
 export interface HookResult {
-  action: 'passthrough' | 'rewrite';
+  action: 'passthrough' | 'rewrite' | 'output';
   rewrittenCommand?: string;
   systemMessage?: string;
+  stdout?: string;
 }
 
 export type HookMode = 'intercept' | 'context';
