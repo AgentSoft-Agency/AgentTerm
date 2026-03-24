@@ -10,7 +10,9 @@ export function buildContextText(): string {
 
   sections.push('## Shared Terminals (agent-term)');
   sections.push('');
-  sections.push('`agent-term` is installed. All Bash commands run through shared tmux terminals automatically. Use these commands to interact with running terminals:');
+  sections.push('`agent-term` is installed. All Bash commands run through shared tmux terminals automatically.');
+  sections.push('');
+  sections.push('**IMPORTANT:** When you need to check logs, output, or status of any running process (dev servers, builds, watchers), ALWAYS use `agent-term list` and `agent-term logs <name>` FIRST. Do NOT use `lsof`, `ps aux`, or other workarounds — agent-term has the terminal output.');
   sections.push('');
 
   try {
