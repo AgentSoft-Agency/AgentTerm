@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.1](https://github.com/AgentSoft-Agency/AgentTerm/compare/v0.4.0...v0.4.1) (2026-03-24)
+
+
+### Features
+
+* add restart command to kill and re-run a terminal ([0e124e9](https://github.com/AgentSoft-Agency/AgentTerm/commit/0e124e91a4f193c0dc2e5fcfcb4210058ac8bb79))
+
 ## [0.4.0](https://github.com/AgentSoft-Agency/AgentTerm/compare/v0.3.0...v0.4.0) (2026-03-24)
 
 
