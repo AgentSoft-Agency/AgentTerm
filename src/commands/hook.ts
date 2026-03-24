@@ -25,8 +25,9 @@ function sleep(ms: number): Promise<void> {
 export async function processHook(command: string, deadlineMs: number = HOOK_DEADLINE_MS): Promise<HookResult> {
   const trimmed = command.trim();
 
-  // Self-check: prevent infinite recursion
-  if (!trimmed || trimmed.startsWith('agent-term')) {
+  // Self-check: prevent infinite recursion and skip tmux commands
+  // (agent-term uses tmux internally; routing tmux through tmux would break)
+  if (!trimmed || trimmed.startsWith('agent-term') || /(?:^|\/)tmux\b/.test(trimmed)) {
     return { action: 'passthrough' };
   }
 
