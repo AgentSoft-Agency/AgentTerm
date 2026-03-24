@@ -1,5 +1,5 @@
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import type { AgentAdapter, HookInput, HookResult } from './adapter.js';
 
@@ -16,11 +16,49 @@ export class GeminiCliAdapter implements AgentAdapter {
   }
 
   register(): void {
-    console.warn('Gemini CLI hook registration is not yet implemented. Hook format TBD.');
+    const settings = this.readSettings();
+    if (!settings.hooks) settings.hooks = {};
+    if (!settings.hooks.BeforeTool) settings.hooks.BeforeTool = [];
+
+    const existing = settings.hooks.BeforeTool as any[];
+    const alreadyRegistered = existing.some((entry: any) =>
+      entry.hooks?.some((h: any) =>
+        h.name === 'agent-term' ||
+        (typeof h.command === 'string' && h.command.includes('agent-term')),
+      ),
+    );
+
+    if (!alreadyRegistered) {
+      existing.push({
+        matcher: 'run_shell_command',
+        hooks: [{
+          name: 'agent-term',
+          type: 'command',
+          command: 'agent-term hook --agent gemini-cli',
+          timeout: 15000,
+        }],
+      });
+    }
+
+    this.writeSettings(settings);
   }
 
   unregister(): void {
-    console.warn('Gemini CLI hook unregistration is not yet implemented.');
+    const settings = this.readSettings();
+    if (!settings.hooks?.BeforeTool) return;
+
+    settings.hooks.BeforeTool = (settings.hooks.BeforeTool as any[]).filter(
+      (entry: any) => !entry.hooks?.some((h: any) =>
+        h.name === 'agent-term' ||
+        (typeof h.command === 'string' && h.command.includes('agent-term')),
+      ),
+    );
+
+    if ((settings.hooks.BeforeTool as any[]).length === 0) {
+      delete settings.hooks.BeforeTool;
+    }
+
+    this.writeSettings(settings);
   }
 
   parseHookInput(stdin: string): HookInput {
@@ -47,5 +85,19 @@ export class GeminiCliAdapter implements AgentAdapter {
       },
       systemMessage: result.systemMessage ?? '',
     });
+  }
+
+  private readSettings(): any {
+    if (!existsSync(SETTINGS_PATH)) return {};
+    try {
+      return JSON.parse(readFileSync(SETTINGS_PATH, 'utf-8'));
+    } catch {
+      return {};
+    }
+  }
+
+  private writeSettings(settings: any): void {
+    mkdirSync(dirname(SETTINGS_PATH), { recursive: true });
+    writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
   }
 }
