@@ -85,7 +85,7 @@ describe('ClaudeCodeAdapter', () => {
     it('returns context text containing agent-term', () => {
       const context = adapter.generateContext();
       expect(context).toContain('agent-term');
-      expect(context).toContain('shared tmux terminals');
+      expect(context).toContain('Shared Terminal Manager');
     });
   });
 });

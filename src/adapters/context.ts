@@ -8,58 +8,35 @@ import { fromSessionName } from '../naming.js';
 export function buildContextText(): string {
   const sections: string[] = [];
 
-  sections.push('## Shared Terminals (agent-term)');
+  sections.push('## agent-term: Shared Terminal Manager');
   sections.push('');
-  sections.push('`agent-term` is installed. All Bash commands run through shared tmux terminals automatically.');
-  sections.push('');
-  sections.push('**IMPORTANT:** When you need to check logs, output, or status of any running process (dev servers, builds, watchers), ALWAYS use `agent-term list` and `agent-term logs <name>` FIRST. Do NOT use `lsof`, `ps aux`, or other workarounds — agent-term has the terminal output.');
+  sections.push('All Bash commands are managed by `agent-term`. To check process output, logs, or status, ONLY use `agent-term` commands. Do NOT use `lsof`, `ps aux`, `tmux`, `docker logs`, or other tools to find process output.');
   sections.push('');
 
   try {
     const sessions = listSessionNames();
     if (sessions.length > 0) {
-      sections.push('### Active terminals');
-      sections.push('');
+      sections.push('Active terminals:');
       for (const sn of sessions) {
         const name = fromSessionName(sn);
         const { dead } = getSessionStatus(sn);
-        const command = getSessionCommand(sn);
         const status = dead ? 'exited' : 'running';
-        sections.push(`- **${name}** (${status}): \`${command}\``);
+        sections.push(`- ${name} (${status}) → use \`agent-term logs ${name}\` to read output`);
       }
-      sections.push('');
-    } else {
-      sections.push('No active shared terminals.');
       sections.push('');
     }
   } catch {
-    sections.push('No active shared terminals.');
-    sections.push('');
+    // tmux not running — skip terminal listing
   }
 
-  sections.push('### Usage');
-  sections.push('');
-  sections.push('```bash');
-  sections.push('# Start a long-running command in a shared terminal');
-  sections.push('agent-term start --name <name> -- <command>');
-  sections.push('');
-  sections.push('# Read output from a shared terminal');
-  sections.push('agent-term logs <name> --lines 50');
-  sections.push('');
-  sections.push('# Send input to a shared terminal');
-  sections.push('agent-term send <name> "<input>"');
-  sections.push('');
-  sections.push('# Check terminal status');
-  sections.push('agent-term status <name>');
-  sections.push('');
-  sections.push('# List all shared terminals');
-  sections.push('agent-term list');
-  sections.push('');
-  sections.push('# Kill a shared terminal');
-  sections.push('agent-term kill <name>');
-  sections.push('```');
-  sections.push('');
-  sections.push('Do NOT run long-running commands directly — use `agent-term start` so other agent sessions can access them.');
+  sections.push('Commands:');
+  sections.push('- `agent-term list` — show all terminals');
+  sections.push('- `agent-term logs <name>` — read terminal output');
+  sections.push('- `agent-term logs <name> --lines 500` — read more output');
+  sections.push('- `agent-term send <name> "<input>"` — send input (e.g. "rs" to restart)');
+  sections.push('- `agent-term status <name>` — check if process is alive');
+  sections.push('- `agent-term kill <name>` — stop a terminal');
+  sections.push('- `agent-term start --name <name> -- <command>` — start a new long-running process');
 
   return sections.join('\n');
 }

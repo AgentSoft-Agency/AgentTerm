@@ -87,11 +87,9 @@ describe('CodexCliAdapter', () => {
       vi.mocked(listSessionNames).mockReturnValue([]);
 
       const context = adapter.generateContext();
-      expect(context).toContain('Shared Terminals (agent-term)');
-      expect(context).toContain('No active shared terminals.');
+      expect(context).toContain('Shared Terminal Manager');
       expect(context).toContain('agent-term start');
       expect(context).toContain('agent-term logs');
-      expect(context).toContain('All Bash commands run through shared tmux terminals');
     });
 
     it('lists active terminals', () => {
@@ -104,28 +102,27 @@ describe('CodexCliAdapter', () => {
         .mockReturnValueOnce('docker compose up');
 
       const context = adapter.generateContext();
-      expect(context).toContain('**pnpm-dev** (running)');
-      expect(context).toContain('`pnpm dev`');
-      expect(context).toContain('**docker-compose-up** (exited)');
-      expect(context).toContain('`docker compose up`');
+      expect(context).toContain('pnpm-dev (running)');
+      expect(context).toContain('docker-compose-up (exited)');
+      expect(context).toContain('agent-term logs pnpm-dev');
     });
 
-    it('includes usage instructions', () => {
+    it('includes usage commands', () => {
       vi.mocked(listSessionNames).mockReturnValue([]);
 
       const context = adapter.generateContext();
-      expect(context).toContain('agent-term start --name <name> -- <command>');
-      expect(context).toContain('agent-term logs <name>');
-      expect(context).toContain('agent-term send <name>');
-      expect(context).toContain('agent-term kill <name>');
-      expect(context).toContain('Do NOT run long-running commands directly');
+      expect(context).toContain('agent-term start');
+      expect(context).toContain('agent-term logs');
+      expect(context).toContain('agent-term send');
+      expect(context).toContain('agent-term kill');
     });
 
     it('handles tmux errors gracefully', () => {
       vi.mocked(listSessionNames).mockImplementation(() => { throw new Error('tmux not running'); });
 
       const context = adapter.generateContext();
-      expect(context).toContain('No active shared terminals.');
+      expect(context).toContain('agent-term');
+      expect(context).not.toContain('Active terminals');
     });
   });
 
