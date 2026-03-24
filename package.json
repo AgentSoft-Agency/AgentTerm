@@ -11,9 +11,16 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:major": "standard-version --release-as major",
+    "release:first": "standard-version --first-release",
+    "prepare": "husky"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -24,7 +31,11 @@
     "commander": "^14.0.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@types/node": "^25.5.0",
+    "husky": "^9.1.7",
+    "standard-version": "^9.5.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.1"
   }
