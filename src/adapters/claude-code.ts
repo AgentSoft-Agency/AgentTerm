@@ -41,7 +41,6 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     );
     if (!sessionStartRegistered) {
       sessionStartHooks.push({
-        matcher: '',
         hooks: [{
           type: 'command',
           command: 'agent-term hook --agent claude-code',
