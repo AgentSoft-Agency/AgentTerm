@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/AgentSoft-Agency/AgentTerm/compare/v0.2.0...v0.3.0) (2026-03-24)
+
+
+### Features
+
+* add output action to HookResult interface ([56ed09e](https://github.com/AgentSoft-Agency/AgentTerm/commit/56ed09ed240caa3f75ca22f2290e33e161095505))
+* add tmux helpers for remain-on-exit and session creation ([9c0b06e](https://github.com/AgentSoft-Agency/AgentTerm/commit/9c0b06ed6450d8b340ea4e2cfe5bac9065138037))
+* add uniqueSuffix() to naming module ([babc936](https://github.com/AgentSoft-Agency/AgentTerm/commit/babc936327cfc49f3d16ba85e59d2ad6a4a9f53c))
+* handle output action in Gemini CLI adapter via temp file ([f016cc7](https://github.com/AgentSoft-Agency/AgentTerm/commit/f016cc790abf9a6735053520b2d7738587d4d684))
+* replace pattern-based hook with universal tmux routing ([3a87554](https://github.com/AgentSoft-Agency/AgentTerm/commit/3a87554c06a049ee854fdc604b6db5ddc71d8762))
+
+
+### Refactors
+
+* remove config file creation from init command ([1342a19](https://github.com/AgentSoft-Agency/AgentTerm/commit/1342a19b3513f3ddd44c80527ce781ae64c56545))
+* remove pattern dependency from Codex CLI adapter ([ccf65d9](https://github.com/AgentSoft-Agency/AgentTerm/commit/ccf65d94d41852f596acebdc8eafd1a28c34c461))
+
 ## [0.2.0](https://github.com/AgentSoft-Agency/AgentTerm/compare/v0.1.1...v0.2.0) (2026-03-24)
 
 
