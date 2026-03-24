@@ -4,7 +4,6 @@ import { homedir } from 'node:os';
 import type { AgentAdapter, HookInput, HookMode, HookResult } from './adapter.js';
 import { listSessionNames, getSessionStatus, getSessionCommand } from '../tmux.js';
 import { fromSessionName } from '../naming.js';
-import { loadPatterns } from '../config.js';
 
 const CODEX_DIR = join(homedir(), '.codex');
 const CONFIG_PATH = join(CODEX_DIR, 'config.toml');
@@ -93,7 +92,7 @@ export class CodexCliAdapter implements AgentAdapter {
 
     sections.push('## Shared Terminals (agent-term)');
     sections.push('');
-    sections.push('`agent-term` is installed on this machine. Use it for long-running commands (dev servers, watchers, docker compose, builds that run continuously).');
+    sections.push('`agent-term` is installed on this machine. All commands run through shared tmux terminals automatically for intercept-mode agents. For Codex CLI, use `agent-term start` to route long-running commands (dev servers, watchers, builds) to shared terminals.');
     sections.push('');
 
     // List active terminals
@@ -116,18 +115,6 @@ export class CodexCliAdapter implements AgentAdapter {
       }
     } catch {
       sections.push('No active shared terminals.');
-      sections.push('');
-    }
-
-    // List configured patterns so the model knows what commands to route
-    const patterns = loadPatterns();
-    if (patterns.length > 0) {
-      sections.push('### Commands to route through agent-term');
-      sections.push('');
-      sections.push('These command patterns should use agent-term instead of running directly:');
-      for (const p of patterns) {
-        sections.push(`- \`${p}\``);
-      }
       sections.push('');
     }
 

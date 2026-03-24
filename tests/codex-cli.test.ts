@@ -19,10 +19,6 @@ vi.mock('../src/tmux.js', () => ({
   getSessionCommand: vi.fn(() => 'pnpm dev'),
 }));
 
-vi.mock('../src/config.js', () => ({
-  loadPatterns: vi.fn(() => ['pnpm dev*', 'docker compose up*']),
-}));
-
 import { listSessionNames, getSessionStatus, getSessionCommand } from '../src/tmux.js';
 
 describe('CodexCliAdapter', () => {
@@ -88,6 +84,7 @@ describe('CodexCliAdapter', () => {
       expect(context).toContain('No active shared terminals.');
       expect(context).toContain('agent-term start');
       expect(context).toContain('agent-term logs');
+      expect(context).toContain('All commands run through shared tmux terminals');
     });
 
     it('lists active terminals', () => {
@@ -104,15 +101,6 @@ describe('CodexCliAdapter', () => {
       expect(context).toContain('`pnpm dev`');
       expect(context).toContain('**docker-compose-up** (exited)');
       expect(context).toContain('`docker compose up`');
-    });
-
-    it('includes configured patterns', () => {
-      vi.mocked(listSessionNames).mockReturnValue([]);
-
-      const context = adapter.generateContext();
-      expect(context).toContain('Commands to route through agent-term');
-      expect(context).toContain('`pnpm dev*`');
-      expect(context).toContain('`docker compose up*`');
     });
 
     it('includes usage instructions', () => {
