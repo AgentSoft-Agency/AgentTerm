@@ -27,7 +27,6 @@ describe('CodexCliAdapter', () => {
   it('has correct metadata', () => {
     expect(adapter.name).toBe('codex-cli');
     expect(adapter.displayName).toBe('Codex CLI');
-    expect(adapter.hookMode).toBe('context');
   });
 
   describe('parseHookInput', () => {
@@ -71,6 +70,14 @@ describe('CodexCliAdapter', () => {
     });
   });
 
+  describe('isSessionStart', () => {
+    it('always returns true (context-mode adapter)', () => {
+      expect(adapter.isSessionStart('')).toBe(true);
+      expect(adapter.isSessionStart('{"hook_event_name":"SessionStart"}')).toBe(true);
+      expect(adapter.isSessionStart('anything')).toBe(true);
+    });
+  });
+
   describe('generateContext', () => {
     beforeEach(() => {
       vi.clearAllMocks();
@@ -84,7 +91,7 @@ describe('CodexCliAdapter', () => {
       expect(context).toContain('No active shared terminals.');
       expect(context).toContain('agent-term start');
       expect(context).toContain('agent-term logs');
-      expect(context).toContain('All commands run through shared tmux terminals');
+      expect(context).toContain('All Bash commands run through shared tmux terminals');
     });
 
     it('lists active terminals', () => {
