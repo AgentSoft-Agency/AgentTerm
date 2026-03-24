@@ -130,6 +130,8 @@ describe('GeminiCliAdapter', () => {
 
       expect(writeFileSync).toHaveBeenCalledOnce();
       const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string);
+      expect(written.hooks.SessionStart).toHaveLength(1);
+      expect(written.hooks.SessionStart[0].hooks[0].name).toBe('agent-term');
       expect(written.hooks.BeforeTool).toHaveLength(1);
       expect(written.hooks.BeforeTool[0].matcher).toBe('run_shell_command');
       expect(written.hooks.BeforeTool[0].hooks[0].name).toBe('agent-term');
@@ -150,7 +152,7 @@ describe('GeminiCliAdapter', () => {
 
       const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string);
       expect(written.mcpServers).toEqual({ test: {} });
-      expect(written.hooks.SessionStart).toHaveLength(1);
+      expect(written.hooks.SessionStart).toHaveLength(2);
       expect(written.hooks.BeforeTool).toHaveLength(1);
     });
 
@@ -158,6 +160,9 @@ describe('GeminiCliAdapter', () => {
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
         hooks: {
+          SessionStart: [{
+            hooks: [{ name: 'agent-term', type: 'command', command: 'agent-term hook --agent gemini-cli' }],
+          }],
           BeforeTool: [{
             matcher: 'run_shell_command',
             hooks: [{ name: 'agent-term', type: 'command', command: 'agent-term hook --agent gemini-cli', timeout: 15000 }],
@@ -180,6 +185,9 @@ describe('GeminiCliAdapter', () => {
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
         hooks: {
+          SessionStart: [
+            { hooks: [{ name: 'agent-term', type: 'command', command: 'agent-term hook --agent gemini-cli' }] },
+          ],
           BeforeTool: [
             { matcher: 'run_shell_command', hooks: [{ name: 'agent-term', type: 'command', command: 'agent-term hook --agent gemini-cli' }] },
             { matcher: 'write_file', hooks: [{ type: 'command', command: 'lint-check.sh' }] },
@@ -192,6 +200,7 @@ describe('GeminiCliAdapter', () => {
       const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string);
       expect(written.hooks.BeforeTool).toHaveLength(1);
       expect(written.hooks.BeforeTool[0].matcher).toBe('write_file');
+      expect(written.hooks.SessionStart).toBeUndefined();
     });
 
     it('handles missing hooks gracefully', () => {
