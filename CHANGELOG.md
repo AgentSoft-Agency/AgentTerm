@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0](https://github.com/AgentSoft-Agency/AgentTerm/compare/v0.1.1...v0.2.0) (2026-03-24)
+
+
+### Features
+
+* **codex-cli:** implement full Codex CLI adapter with SessionStart context injection ([08b5b97](https://github.com/AgentSoft-Agency/AgentTerm/commit/08b5b973354cac7e2107904e8113b5e7814c9f6a))
+
 ### [0.1.1](https://github.com/AgentSoft-Agency/AgentTerm/compare/v0.1.0...v0.1.1) (2026-03-24)
 
 ## 0.1.0 (2026-03-24)
