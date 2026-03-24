@@ -1,35 +1,75 @@
 import { getAdapter } from '../adapters/registry.js';
-import { loadPatterns, matchCommand } from '../config.js';
-import { autoName, toSessionName } from '../naming.js';
-import { sessionExists } from '../tmux.js';
+import { autoName, toSessionName, uniqueSuffix } from '../naming.js';
+import {
+  createSessionWithRemainOnExit,
+  getSessionStatus,
+  capturePane,
+  killSession,
+  setRemainOnExit,
+} from '../tmux.js';
 import type { HookResult } from '../adapters/adapter.js';
 
-/**
- * Core hook logic: match command against patterns, decide action.
- * Separated from I/O for testability.
- */
-export function processHook(command: string): HookResult {
-  const patterns = loadPatterns();
+const HOOK_DEADLINE_MS = 13000;
+const POLL_INTERVAL_MS = 200;
 
-  if (!matchCommand(command, patterns)) {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Core hook logic: route every command through tmux.
+ * - agent-term commands pass through (prevents recursion)
+ * - Empty commands pass through
+ * - All other commands run in tmux; poll for exit or deadline
+ */
+export async function processHook(command: string, deadlineMs: number = HOOK_DEADLINE_MS): Promise<HookResult> {
+  const trimmed = command.trim();
+
+  // Self-check: prevent infinite recursion
+  if (!trimmed || trimmed.startsWith('agent-term')) {
     return { action: 'passthrough' };
   }
 
-  const baseName = autoName(command);
-  const tmuxSessionName = toSessionName(baseName);
+  const baseName = autoName(trimmed);
+  const suffix = uniqueSuffix();
+  const userFacingName = `${baseName}-${suffix}`;
+  const sessionName = toSessionName(userFacingName);
 
-  if (sessionExists(tmuxSessionName)) {
-    return {
-      action: 'rewrite',
-      rewrittenCommand: `agent-term logs ${baseName} --lines 50`,
-      systemMessage: `Terminal '${baseName}' is already running. Showing recent logs.`,
-    };
+  // Create tmux session with remain-on-exit
+  const created = createSessionWithRemainOnExit(sessionName, trimmed);
+  if (!created) {
+    // tmux failure — fall back to passthrough
+    return { action: 'passthrough' };
   }
+
+  const deadline = Date.now() + deadlineMs;
+
+  // Poll loop
+  while (Date.now() < deadline) {
+    const status = getSessionStatus(sessionName);
+
+    if (status.dead) {
+      // Process finished — capture output and clean up
+      const output = capturePane(sessionName, 5000);
+      killSession(sessionName);
+      return {
+        action: 'output',
+        stdout: output,
+        systemMessage: `Command completed (exit ${status.exitCode}).`,
+      };
+    }
+
+    await sleep(POLL_INTERVAL_MS);
+  }
+
+  // Deadline reached — process still running
+  const logs = capturePane(sessionName, 50);
+  setRemainOnExit(sessionName, false);
 
   return {
     action: 'rewrite',
-    rewrittenCommand: `agent-term start --name ${baseName} -- ${command}`,
-    systemMessage: `Command routed to shared terminal '${baseName}' via agent-term.`,
+    rewrittenCommand: `agent-term logs ${userFacingName} --lines 50`,
+    systemMessage: `Terminal '${userFacingName}' is still running. Showing recent logs. Use 'agent-term logs ${userFacingName}' to check later.`,
   };
 }
 
@@ -71,7 +111,7 @@ export async function runHook(agentName: string): Promise<void> {
     process.exit(0);
   }
 
-  const result = processHook(input.command);
+  const result = await processHook(input.command);
   const output = adapter.formatHookOutput(result);
 
   if (output) {

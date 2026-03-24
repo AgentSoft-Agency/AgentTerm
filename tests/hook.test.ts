@@ -4,47 +4,87 @@ import type { HookResult } from '../src/adapters/adapter.js';
 
 // Mock tmux
 vi.mock('../src/tmux.js', () => ({
-  sessionExists: vi.fn(() => false),
-  listSessionNames: vi.fn(() => []),
+  createSessionWithRemainOnExit: vi.fn(() => true),
+  getSessionStatus: vi.fn(() => ({ pid: '1234', dead: false, exitCode: '' })),
+  capturePane: vi.fn(() => 'some output'),
+  killSession: vi.fn(),
+  setRemainOnExit: vi.fn(),
 }));
 
-// Mock config
-vi.mock('../src/config.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../src/config.js')>();
+// Mock naming
+vi.mock('../src/naming.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/naming.js')>();
   return {
     ...actual,
-    loadPatterns: vi.fn(() => ['pnpm dev*', 'docker compose up*']),
+    uniqueSuffix: vi.fn(() => 'a3f0'),
   };
 });
 
-import { sessionExists } from '../src/tmux.js';
+import {
+  createSessionWithRemainOnExit,
+  getSessionStatus,
+  capturePane,
+  killSession,
+  setRemainOnExit,
+} from '../src/tmux.js';
 
 describe('processHook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns passthrough for non-matching commands', () => {
-    const result = processHook('git status');
+  it('returns passthrough for agent-term commands', async () => {
+    const result = await processHook('agent-term logs pnpm-dev');
+    expect(result.action).toBe('passthrough');
+    expect(createSessionWithRemainOnExit).not.toHaveBeenCalled();
+  });
+
+  it('returns passthrough for empty commands', async () => {
+    const result = await processHook('');
     expect(result.action).toBe('passthrough');
   });
 
-  it('returns rewrite with start for matching new command', () => {
-    const result = processHook('pnpm dev');
-    expect(result.action).toBe('rewrite');
-    expect(result.rewrittenCommand).toContain('agent-term start');
-    expect(result.rewrittenCommand).toContain('pnpm dev');
+  it('returns passthrough for whitespace-only commands', async () => {
+    const result = await processHook('   ');
+    expect(result.action).toBe('passthrough');
   });
 
-  it('returns rewrite with logs for already-running terminal', () => {
-    vi.mocked(sessionExists).mockReturnValue(true);
-    const result = processHook('pnpm dev');
+  it('returns output when command exits quickly', async () => {
+    vi.mocked(getSessionStatus).mockReturnValue({ pid: '1234', dead: true, exitCode: '0' });
+    vi.mocked(capturePane).mockReturnValue('file1.ts\nfile2.ts');
+
+    const result = await processHook('ls');
+    expect(result.action).toBe('output');
+    expect(result.stdout).toBe('file1.ts\nfile2.ts');
+    expect(killSession).toHaveBeenCalled();
+  });
+
+  it('returns rewrite when command is still running at deadline', async () => {
+    vi.mocked(getSessionStatus).mockReturnValue({ pid: '1234', dead: false, exitCode: '' });
+    vi.mocked(capturePane).mockReturnValue('Starting dev server...');
+
+    // Use a very short deadline for testing
+    const result = await processHook('pnpm dev', 200);
     expect(result.action).toBe('rewrite');
     expect(result.rewrittenCommand).toContain('agent-term logs');
+    expect(result.systemMessage).toContain('still running');
+    expect(setRemainOnExit).toHaveBeenCalledWith(expect.any(String), false);
   });
 
-  it('matches docker compose with trailing args', () => {
-    const result = processHook('docker compose up -d');
-    expect(result.action).toBe('rewrite');
+  it('falls back to passthrough when tmux session creation fails', async () => {
+    vi.mocked(createSessionWithRemainOnExit).mockReturnValue(false);
+
+    const result = await processHook('pnpm build');
+    expect(result.action).toBe('passthrough');
+  });
+
+  it('creates session with unique name', async () => {
+    vi.mocked(getSessionStatus).mockReturnValue({ pid: '1234', dead: true, exitCode: '0' });
+
+    await processHook('git status');
+    expect(createSessionWithRemainOnExit).toHaveBeenCalledWith(
+      'at-git-status-a3f0',
+      'git status',
+    );
   });
 });
