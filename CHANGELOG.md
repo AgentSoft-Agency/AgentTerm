@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0](https://github.com/AgentSoft-Agency/AgentTerm/compare/v0.4.1...v1.0.0) (2026-04-16)
+
+### Breaking changes & migration
+
+- The `agent-term hook` subcommand is removed. agent-term now integrates with each supported agent via a bundled `SKILL.md` installed into the agent's skills directory.
+- **Upgrade path:** run `agent-term init`. It detects and removes any pre-1.0 hook entries from your agent config files, then installs the skill.
+- Affected agents: Claude Code (`~/.claude/skills/agent-term/SKILL.md`), Codex CLI (`$CODEX_HOME/skills/agent-term/SKILL.md` or `~/.codex/skills/agent-term/SKILL.md`), Gemini CLI (`~/.gemini/skills/agent-term/SKILL.md`).
+
+### ⚠ BREAKING CHANGES
+
+* the 'agent-term hook' subcommand is removed. The
+adapter interface drops parseHookInput, formatHookOutput, isSessionStart,
+generateContext, register, unregister in favor of installSkill,
+uninstallSkill, removeLegacyHooks. Stubs throw until wired up in
+subsequent commits.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+
+### Features
+
+* **assets:** add bundled SKILL.md for skill-based integration ([a498fdf](https://github.com/AgentSoft-Agency/AgentTerm/commit/a498fdf965d010d665c7029867b73e53098576da))
+* **claude-code:** implement installSkill ([54cfc31](https://github.com/AgentSoft-Agency/AgentTerm/commit/54cfc3141dff968e498a3713aef0d4c40e5d8a9d))
+* **claude-code:** implement removeLegacyHooks ([814741d](https://github.com/AgentSoft-Agency/AgentTerm/commit/814741d41157b4b405382b1c14d03c790d27a0bf))
+* **claude-code:** implement uninstallSkill ([2385539](https://github.com/AgentSoft-Agency/AgentTerm/commit/238553981c092bae26f08d4ebed7bfe6e5fb94e9))
+* **codex-cli:** implement installSkill, uninstallSkill, removeLegacyHooks ([099fd1d](https://github.com/AgentSoft-Agency/AgentTerm/commit/099fd1d34c6a8a994d141538f588dab8bc929aeb))
+* **gemini-cli:** implement installSkill, uninstallSkill, removeLegacyHooks ([5c368e9](https://github.com/AgentSoft-Agency/AgentTerm/commit/5c368e9eb0646f667f663bd2db7b78a1058f106c))
+* **hook:** add LONG_RUNNING_PATTERNS gate (pre-1.0 work, to be removed) ([4cdf516](https://github.com/AgentSoft-Agency/AgentTerm/commit/4cdf516b333e667145ffd70b072b6af73ebbc8f4))
+
+
+### Refactors
+
+* remove hook machinery, collapse AgentAdapter to skill surface ([9824e3c](https://github.com/AgentSoft-Agency/AgentTerm/commit/9824e3c545e3d62ac671cb3b818b1e0bd2489235))
+
+
+### Documentation
+
+* add v1.0.0 skill-based integration design ([889365e](https://github.com/AgentSoft-Agency/AgentTerm/commit/889365edd333ff352d2940d875d0678b61ebe394))
+* add v1.0.0 skill-based integration implementation plan ([d2e37f1](https://github.com/AgentSoft-Agency/AgentTerm/commit/d2e37f1e1eee3f6ae86d79ba951ecef81907d34c))
+* rewrite README for skill-based integration; fix init description ([58a849a](https://github.com/AgentSoft-Agency/AgentTerm/commit/58a849a76f81d30707cd312d92bf28b834e144f2))
+* **specs:** mark pre-1.0 hook-era designs as superseded ([ed9e2fe](https://github.com/AgentSoft-Agency/AgentTerm/commit/ed9e2fe04312728258eb518d5c228b2546c82a83))
+* update README for universal tmux hook and context injection ([c668062](https://github.com/AgentSoft-Agency/AgentTerm/commit/c6680620f55e8e6fd66bfcd885c38ece08dd78ec))
+
 ### [0.4.1](https://github.com/AgentSoft-Agency/AgentTerm/compare/v0.4.0...v0.4.1) (2026-03-24)
 
 
