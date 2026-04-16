@@ -10,7 +10,7 @@ program
 
 program
   .command('init')
-  .description('Set up agent-term: create config, detect and register agent hooks')
+  .description('Set up agent-term: detect installed agents and install the agent-term skill')
   .option('--non-interactive', 'Run without prompts')
   .option('--agents <names>', 'Comma-separated agent names (for non-interactive mode)')
   .action(async (opts) => {

@@ -2,25 +2,33 @@
 
 Shared long-running terminals for AI coding agents.
 
-When one AI agent session starts a dev server, watcher, or build process, no other session can see its output or send it input. `agent-term` fixes this by routing all Bash commands through shared [tmux](https://github.com/tmux/tmux) sessions that any agent session can access.
+When one AI agent session starts a dev server, watcher, or build process, no other session can see its output or send it input. `agent-term` fixes this by routing persistent processes through shared [tmux](https://github.com/tmux/tmux) sessions that any agent session can access.
 
 ## How it works
 
-1. A pre-hook intercepts **every** Bash command the agent runs
-2. The command runs inside a shared tmux session
-3. Short-lived commands (< 13s) return full output transparently — the agent doesn't notice tmux
-4. Long-running commands stay in tmux — the agent gets logs and the terminal name for follow-up
-5. At session start, context is injected telling the agent about active terminals and `agent-term` commands
+`agent-term` installs a `SKILL.md` file into each detected agent's skill directory. The agent reads that skill at startup and auto-activates it when a task involves starting or managing a persistent process — a dev server, file watcher, tunnel, queue worker, or similar. The skill tells the agent which `agent-term` commands are available and when to use them. Short one-shot commands are not affected.
+
+## Agent integration
+
+### Claude Code
+
+`agent-term init` installs `SKILL.md` at `~/.claude/skills/agent-term/SKILL.md`. The skill auto-activates when you ask the agent to start a persistent process.
+
+### Codex CLI
+
+`agent-term init` installs `SKILL.md` at `$CODEX_HOME/skills/agent-term/SKILL.md` (fallback: `~/.codex/skills/agent-term/SKILL.md`). The skill auto-activates when you ask the agent to start a persistent process.
+
+### Gemini CLI
+
+`agent-term init` installs `SKILL.md` at `~/.gemini/skills/agent-term/SKILL.md`. The skill auto-activates when you ask the agent to start a persistent process.
 
 ## Supported agents
 
-| Agent | Status | Integration |
-|-------|--------|-------------|
-| Claude Code | Fully supported | `PreToolUse` + `SessionStart` hooks |
-| Gemini CLI | Fully supported | `BeforeTool` + `SessionStart` hooks |
-| Codex CLI | Fully supported | `SessionStart` context injection |
-
-All agents get context injected at session start listing active terminals and available commands.
+| Agent | Status |
+|-------|--------|
+| Claude Code | Fully supported |
+| Gemini CLI | Fully supported |
+| Codex CLI | Fully supported |
 
 ## Prerequisites
 
@@ -44,7 +52,7 @@ agent-term init
 This will:
 1. Check that tmux is installed
 2. Auto-detect installed AI agents on your machine
-3. Register hooks for the agents you select (both command interception and session start context)
+3. Install the `agent-term` skill for the agents you select
 
 For scripted/CI setups:
 
@@ -54,12 +62,9 @@ agent-term init --non-interactive --agents claude-code,gemini-cli
 
 ## Usage
 
-### Automatic (via hooks)
+### Automatic (via skill)
 
-Once set up, all Bash commands are routed through tmux automatically. No configuration needed — no pattern files to maintain.
-
-- **Quick commands** (`ls`, `git status`, `pnpm build`) finish and return output as if they ran normally
-- **Long-running commands** (`pnpm dev`, `docker compose up`) stay running in tmux — the agent gets logs and can check back later
+Once set up, the agent reaches for `agent-term` when you ask it to start or manage a persistent process. No pattern configuration needed.
 
 ### Manual
 
@@ -102,10 +107,12 @@ agent-term start --name frontend -- pnpm --filter app dev
 
 - All terminals run on a dedicated tmux server (`tmux -L agent-term`), fully isolated from your own tmux sessions
 - Session names are prefixed with `at-` (e.g., `at-frontend`)
-- Hook integration uses an adapter pattern — each agent has an adapter that handles its hook format
-- Universal routing: every Bash command goes through tmux, no pattern configuration needed
-- Graceful fallback: if tmux or agent-term fails, commands pass through to the agent's shell normally
-- Context injection at session start tells agents about active terminals and available commands
+- Each supported agent has an adapter that handles skill installation and legacy migration
+- Graceful fallback: if tmux or agent-term fails, the agent falls back to running the command directly
+
+## Migrating from 0.x
+
+Run `agent-term init`. It will detect any existing agent-term hook entries in your agent config files and remove them automatically, then install the skill. The `hook` subcommand is removed in 1.0.0.
 
 ## Platform support
 
