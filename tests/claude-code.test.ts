@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { ClaudeCodeAdapter } from '../src/adapters/claude-code.js';
 
 vi.mock('node:fs', async () => {
@@ -11,6 +11,7 @@ vi.mock('node:fs', async () => {
     existsSync: vi.fn(actual.existsSync),
     mkdirSync: vi.fn(),
     writeFileSync: vi.fn(),
+    rmSync: vi.fn(),
     readFileSync: vi.fn((path: string, enc: string) => {
       if (String(path).endsWith('src/assets/SKILL.md')) {
         return '---\nname: agent-term\ndescription: test\n---\nBody';
@@ -61,5 +62,20 @@ describe('ClaudeCodeAdapter.installSkill', () => {
     adapter.installSkill();
 
     expect(writeFileSync).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('ClaudeCodeAdapter.uninstallSkill', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('removes the skill directory recursively', async () => {
+    const { rmSync } = await import('node:fs');
+    const adapter = new ClaudeCodeAdapter();
+
+    adapter.uninstallSkill();
+
+    expect(rmSync).toHaveBeenCalledWith(adapter.skillPath, { recursive: true, force: true });
   });
 });

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -32,7 +32,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   }
 
   uninstallSkill(): void {
-    throw new Error('not implemented');
+    rmSync(this.skillPath, { recursive: true, force: true });
   }
 
   removeLegacyHooks(): { removed: boolean } {
