@@ -19,15 +19,6 @@ program
   });
 
 program
-  .command('hook')
-  .description('Agent pre-hook entry point (called by agents, not users)')
-  .requiredOption('--agent <name>', 'Agent adapter name')
-  .action(async (opts) => {
-    const { runHook } = await import('./commands/hook.js');
-    await runHook(opts.agent);
-  });
-
-program
   .command('start')
   .description('Start a shared terminal')
   .option('--name <name>', 'Terminal name (auto-generated from command if omitted)')

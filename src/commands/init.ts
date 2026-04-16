@@ -9,17 +9,13 @@ export async function runInit(options: { nonInteractive?: boolean; agents?: stri
 
   intro('agent-term init');
 
-  // Step 1: Check tmux
   if (!isTmuxInstalled()) {
     const platform = process.platform;
-    const installCmd = platform === 'darwin'
-      ? 'brew install tmux'
-      : 'sudo apt install tmux';
+    const installCmd = platform === 'darwin' ? 'brew install tmux' : 'sudo apt install tmux';
     note(`tmux is required but not installed.\n\nInstall it with:\n  ${installCmd}`, 'Missing dependency');
     process.exit(1);
   }
 
-  // Step 2: Detect agents
   const allAdapters = getAllAdapters();
   const detected = detectInstalledAgents();
 
@@ -29,27 +25,30 @@ export async function runInit(options: { nonInteractive?: boolean; agents?: stri
     return;
   }
 
-  const options_list = allAdapters.map((a) => ({
+  const optionsList = allAdapters.map((a) => ({
     value: a.name,
     label: `${a.displayName}${detected.some((d) => d.name === a.name) ? '' : ' (not detected)'}`,
-    hint: a.configPath,
+    hint: a.skillPath,
   }));
 
   const selected = await multiselect({
     message: `Found ${detected.length} agent(s) installed. Select which to configure:`,
-    options: options_list,
+    options: optionsList,
     initialValues: detected.map((a) => a.name),
     required: false,
   });
 
   if (isCancel(selected)) { cancel('Setup cancelled.'); process.exit(0); }
 
-  // Step 3: Register hooks
   const selectedAdapters = allAdapters.filter((a) => (selected as string[]).includes(a.name));
 
   for (const adapter of selectedAdapters) {
-    adapter.register();
-    note(`Registered hook in ${adapter.configPath}`, adapter.displayName);
+    const { removed } = adapter.removeLegacyHooks();
+    if (removed) {
+      note(`Removed legacy hooks from ${adapter.configPath}`, adapter.displayName);
+    }
+    adapter.installSkill();
+    note(`Installed skill at ${adapter.skillPath}`, adapter.displayName);
   }
 
   outro(`agent-term configured for ${selectedAdapters.length} agent(s). Run 'agent-term list' to see shared terminals.`);
@@ -67,8 +66,10 @@ async function runNonInteractive(agentNames?: string): Promise<void> {
     for (const name of names) {
       const adapter = allAdapters.find((a) => a.name === name);
       if (adapter) {
-        adapter.register();
-        console.log(`Registered hook for ${adapter.displayName}`);
+        const { removed } = adapter.removeLegacyHooks();
+        if (removed) console.log(`Removed legacy hooks for ${adapter.displayName}`);
+        adapter.installSkill();
+        console.log(`Installed skill for ${adapter.displayName}`);
       } else {
         console.warn(`Warning: unknown agent '${name}'`);
       }
