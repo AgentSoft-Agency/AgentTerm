@@ -1,11 +1,17 @@
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import type { AgentAdapter } from './adapter.js';
 
 const GEMINI_DIR = join(homedir(), '.gemini');
 const SETTINGS_PATH = join(GEMINI_DIR, 'settings.json');
 const SKILL_DIR = join(GEMINI_DIR, 'skills', 'agent-term');
+
+function readBundledSkill(): string {
+  const here = dirname(fileURLToPath(import.meta.url));
+  return readFileSync(resolve(here, '..', 'assets', 'SKILL.md'), 'utf-8');
+}
 
 export class GeminiCliAdapter implements AgentAdapter {
   name = 'gemini-cli';
@@ -18,14 +24,44 @@ export class GeminiCliAdapter implements AgentAdapter {
   }
 
   installSkill(): void {
-    throw new Error('not implemented');
+    mkdirSync(this.skillPath, { recursive: true });
+    writeFileSync(join(this.skillPath, 'SKILL.md'), readBundledSkill(), 'utf-8');
   }
 
   uninstallSkill(): void {
-    throw new Error('not implemented');
+    rmSync(this.skillPath, { recursive: true, force: true });
   }
 
   removeLegacyHooks(): { removed: boolean } {
-    throw new Error('not implemented');
+    if (!existsSync(this.configPath)) return { removed: false };
+
+    let settings: any;
+    try {
+      settings = JSON.parse(readFileSync(this.configPath, 'utf-8'));
+    } catch {
+      return { removed: false };
+    }
+
+    if (!settings?.hooks) return { removed: false };
+
+    const isAgentTermEntry = (entry: any): boolean =>
+      Array.isArray(entry?.hooks) &&
+      entry.hooks.some((h: any) =>
+        h?.name === 'agent-term' ||
+        (typeof h?.command === 'string' && h.command.includes('agent-term')),
+      );
+
+    let changed = false;
+    for (const key of ['BeforeTool', 'SessionStart']) {
+      if (!Array.isArray(settings.hooks[key])) continue;
+      const before = settings.hooks[key].length;
+      settings.hooks[key] = settings.hooks[key].filter((entry: any) => !isAgentTermEntry(entry));
+      if (settings.hooks[key].length !== before) changed = true;
+    }
+
+    if (!changed) return { removed: false };
+
+    writeFileSync(this.configPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+    return { removed: true };
   }
 }
