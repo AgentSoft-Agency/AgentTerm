@@ -1,5 +1,7 @@
 # agent-term — Design Spec
 
+> **Superseded by:** [2026-04-16-skill-based-integration-design.md](./2026-04-16-skill-based-integration-design.md) (v1.0.0). This document describes the original hook-based integration. Kept for historical context.
+
 **Date:** 2026-03-23
 **Status:** Draft
 **Repo:** `agent-term` (new, standalone — `/Users/alexandervazquez/Projects/DevChrisVaz/AgentSoft/agent-term`)
