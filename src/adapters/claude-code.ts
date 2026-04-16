@@ -36,6 +36,32 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   }
 
   removeLegacyHooks(): { removed: boolean } {
-    throw new Error('not implemented');
+    if (!existsSync(this.configPath)) return { removed: false };
+
+    let settings: any;
+    try {
+      settings = JSON.parse(readFileSync(this.configPath, 'utf-8'));
+    } catch {
+      return { removed: false };
+    }
+
+    if (!settings?.hooks) return { removed: false };
+
+    const isAgentTermEntry = (entry: any): boolean =>
+      Array.isArray(entry?.hooks) &&
+      entry.hooks.some((h: any) => typeof h?.command === 'string' && h.command.includes('agent-term'));
+
+    let changed = false;
+    for (const key of ['PreToolUse', 'SessionStart']) {
+      if (!Array.isArray(settings.hooks[key])) continue;
+      const before = settings.hooks[key].length;
+      settings.hooks[key] = settings.hooks[key].filter((entry: any) => !isAgentTermEntry(entry));
+      if (settings.hooks[key].length !== before) changed = true;
+    }
+
+    if (!changed) return { removed: false };
+
+    writeFileSync(this.configPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+    return { removed: true };
   }
 }

@@ -79,3 +79,91 @@ describe('ClaudeCodeAdapter.uninstallSkill', () => {
     expect(rmSync).toHaveBeenCalledWith(adapter.skillPath, { recursive: true, force: true });
   });
 });
+
+describe('ClaudeCodeAdapter.removeLegacyHooks', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns { removed: false } when settings.json does not exist', () => {
+    vi.mocked(readFileSync).mockImplementation((path: any) => {
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    });
+    const adapter = new ClaudeCodeAdapter();
+
+    const result = adapter.removeLegacyHooks();
+
+    expect(result).toEqual({ removed: false });
+    expect(writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it('returns { removed: false } when no agent-term hooks are present', () => {
+    vi.mocked(readFileSync).mockImplementation((path: any, enc: any) => {
+      if (String(path).endsWith('settings.json')) {
+        return JSON.stringify({
+          hooks: {
+            PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'other-tool' }] }],
+          },
+        });
+      }
+      return '---\nname: agent-term\ndescription: test\n---\n';
+    });
+    const adapter = new ClaudeCodeAdapter();
+
+    const result = adapter.removeLegacyHooks();
+
+    expect(result).toEqual({ removed: false });
+    expect(writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it('strips agent-term entries from PreToolUse and SessionStart', () => {
+    vi.mocked(readFileSync).mockImplementation((path: any, enc: any) => {
+      if (String(path).endsWith('settings.json')) {
+        return JSON.stringify({
+          hooks: {
+            PreToolUse: [
+              { matcher: 'Bash', hooks: [{ type: 'command', command: 'agent-term hook --agent claude-code' }] },
+              { matcher: 'Bash', hooks: [{ type: 'command', command: 'other-tool' }] },
+            ],
+            SessionStart: [
+              { hooks: [{ type: 'command', command: 'agent-term hook --agent claude-code' }] },
+            ],
+          },
+        });
+      }
+      return '---\nname: agent-term\ndescription: test\n---\n';
+    });
+    const adapter = new ClaudeCodeAdapter();
+
+    const result = adapter.removeLegacyHooks();
+
+    expect(result).toEqual({ removed: true });
+    expect(writeFileSync).toHaveBeenCalledOnce();
+    const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string);
+    expect(written.hooks.PreToolUse).toHaveLength(1);
+    expect(written.hooks.PreToolUse[0].hooks[0].command).toBe('other-tool');
+    expect(written.hooks.SessionStart).toHaveLength(0);
+  });
+
+  it('preserves unrelated settings keys', () => {
+    vi.mocked(readFileSync).mockImplementation((path: any, enc: any) => {
+      if (String(path).endsWith('settings.json')) {
+        return JSON.stringify({
+          permissions: { allow: ['Read(**)'] },
+          hooks: {
+            PreToolUse: [
+              { matcher: 'Bash', hooks: [{ type: 'command', command: 'agent-term hook --agent claude-code' }] },
+            ],
+          },
+        });
+      }
+      return '---\n';
+    });
+    const adapter = new ClaudeCodeAdapter();
+
+    adapter.removeLegacyHooks();
+
+    const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string);
+    expect(written.permissions).toEqual({ allow: ['Read(**)'] });
+  });
+});
