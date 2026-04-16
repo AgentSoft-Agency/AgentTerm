@@ -8,8 +8,10 @@
     "agent-term": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc && node scripts/copy-assets.mjs",
+    "clean": "rm -rf dist",
+    "build": "pnpm clean && tsc && node scripts/copy-assets.mjs",
     "copy:assets": "node scripts/copy-assets.mjs",
+    "prepack": "pnpm build",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
