@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const pkgPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
 
 const program = new Command();
 
 program
   .name('agent-term')
   .description('Shared long-running terminals for AI coding agents')
-  .version('0.1.0');
+  .version(pkg.version);
 
 program
   .command('init')
